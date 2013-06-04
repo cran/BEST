@@ -1,0 +1,353 @@
+
+\documentclass[a4paper]{article}
+
+%\VignetteIndexEntry{BEST User Manual}
+
+\title{Bayesian Estimation Supersedes the t-Test}
+\author{Mike Meredith and John Kruschke}
+
+\usepackage[section]{placeins}        % Forces figs to be placed in current section
+\usepackage[usenames,dvipsnames,svgnames]{xcolor}
+\usepackage[authoryear,round]{natbib} % Format for in-text citations
+\usepackage{graphicx, Rd}
+\usepackage{float}
+\usepackage{Sweave}
+\usepackage[pdfstartview=]{hyperref}                 % hypertext links
+
+\begin{document}
+
+\maketitle
+
+<<options, echo=FALSE, results=hide>>=
+options(continue="  ")
+@
+
+\section{Introduction}
+\label{sec:intro}
+
+The BEST package provides a Bayesian alternative to a \emph{t} test, providing much richer information about the samples and the difference in means than a simple \emph{p} value.
+
+Bayesian estimation for two groups provides complete distributions of credible values for the effect size, group means and their difference, standard deviations and their difference, and the normality of the data. For a single group, distributions for the mean, standard deviation and normality are provided. The method handles outliers.
+
+The decision rule can accept the null value (unlike traditional \emph{t} tests) when certainty in the estimate is high (unlike Bayesian model comparison using Bayes factors).
+
+The package also provides methods to estimate statistical power for various research goals.
+
+The code used for the computations is the same as that used in \citet{Kruschke2013BEST}.
+
+
+\section{The Model}
+\label{sec:model}
+
+\begin{figure}
+  \centering
+  \includegraphics{BESTmodel.jpg}
+  \caption{\it Hierarchical diagram of the descriptive model for robust Bayesian estimation.}
+  \label{fig:model}
+\end{figure}
+
+To accommodate outliers we describe the data with a distribution that has fatter tails than the normal distribution, namely the \emph{t} distribution. (Note that we are using this as a convenient description of the data, not as a sampling distribution from which \emph{p} values are derived.) The relative height of the tails of the \emph{t} distribution is governed by the shape parameter $\nu$: when $\nu$ is small, the distribution has heavy tails, and when it is large (e.g., 100), it is nearly normal. Here we refer to $\nu$ as the normality parameter.
+
+The data (\emph{y}) are assumed to be independent and identically distributed (i.i.d.) draws from a \emph{t} distribution with different mean ($\mu$) and standard deviation ($\sigma$) for each population, and with a common normality parameter ($\nu$), as indicated in the lower portion of Figure~\ref{fig:model}.
+
+The priors used are minimally informative: normal priors with large standard deviation for ($\mu$), broad uniform priors for ($\sigma$), and a shifted-exponential prior for ($\nu$), as shown in the upper part of Figure~\ref{fig:model}. Full details of the priors are given in \citet{Kruschke2013BEST}.
+
+For a general discussion see chapters 11 and 12 of \citet{Kruschke2011book}.
+
+\section{Preparing to run BEST}
+\label{sec:prepare}
+
+BEST uses the JAGS package \citep{Plummer2003} to produce samples from the posterior distribution of each parameter of interest. You will need to download JAGS from \url{http://sourceforge.net/projects/mcmc-jags/} and install it before running BEST.
+
+BEST also requires the packages \verb@rjags@ and \verb@coda@, which should normally be installed at the same time as package BEST if you use the \verb@install.packages@ function in \R{}.
+
+Once installed, we need to load the BEST package at the start of each \R{} session, which will also load rjags and coda and link to JAGS:
+<<loadBEST>>=
+library(BEST)
+@
+\begin{verbatim}
+Loading required package: rjags
+Loading required package: coda
+Loading required package: lattice
+Linked to JAGS 3.3.0
+Loaded modules: basemod,bugs
+\end{verbatim}
+
+
+
+\section{An example with two groups}
+\label{sec:grps2}
+
+\subsection{Some example data}
+\label{subsec:data2g}
+
+We will use hypothetical data for reaction times for two groups ($N_1 = N_2 = 6$), Group 1  consumes a drug which may increase reaction times while Group 2 is a control group that consumes a placebo.
+
+<<data2grps>>=
+y1 <- c(5.77, 5.33, 4.59, 4.33, 3.66, 4.48)
+y2 <- c(3.88, 3.55, 3.29, 2.59, 2.33, 3.59)
+@
+
+\subsection{Running the model}
+\label{subsec:run2g}
+
+We run BESTmcmc and save the result in BESTout. This will take several minutes:
+
+% reduce numSavedSteps = 1e+03 for trial runs.
+% hide results as rjags output does not format properly
+<<run2grps, results=hide>>= 
+BESTout <- BESTmcmc(y1, y2)
+@
+
+\begin{verbatim}
+Setting up the JAGS model...
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+   Graph Size: 43
+Initializing model
+  |++++++++++++++++++++++++++++++++++++++++++++++++++| 100%
+Burning in the MCMC chain...
+  |**************************************************| 100%
+Sampling final MCMC chain...
+  |**************************************************| 100%
+\end{verbatim}
+
+
+
+
+\subsection{Basic inferences}
+\label{subsec:infer2g}
+
+The default plot (Figure~\ref{fig:means2g}) is a histogram of the posterior distribution of the difference in means. 
+<<meanDiff2grps, fig=TRUE, width=6, height=4, include=FALSE>>=
+plot(BESTout)
+@
+
+\begin{figure}[H]
+  \centering
+  \includegraphics{BEST-meanDiff2grps}
+  \caption{\it Default plot: posterior probability of the difference in means.}
+  \label{fig:means2g}
+\end{figure}
+
+<<meanDiffGTzero, results=hide, echo=FALSE>>=
+meanDiff <- (BESTout$mu1 - BESTout$mu2)
+meanDiffGTzero <- mean(meanDiff > 0)
+@
+Also shown is the mean of the posterior probability, which is an appropriate point estimate of the true difference in means, the 95\% Highest Density Interval (HDI), and the posterior probability that the difference is greater than zero. The 95\% HDI does not include zero, and the probability that the true value is greater than zero is shown as \Sexpr{round(meanDiffGTzero*100, 1)}\%. Compare this with the output from a \emph{t} test:
+
+<<ttest2grps>>=
+t.test(y1, y2)
+@
+
+Because we are dealing with a Bayesian posterior probability distribution, we can extract much more information:
+
+\begin{itemize}
+  \item We can estimate the probability that the true difference in means is above (or below) an arbitrary \emph{comparison value}. For example, an increase reaction time of 1 unit may indicate that users of the drug should not drive or operate equipment.
+  \item The probability that the difference in yields is precisely zero is zero. More interesting is the probability that the difference may be too small to matter. We can define a \emph{region of practical equivalence} (ROPE) around zero, and obtain the probability that the true value lies therein. For the reaction time example, a difference of $\pm$~0.1 may be too small to matter.
+\end{itemize}
+
+<<meanDiff2grpsMore, fig=TRUE,  width=6, height=4, include=FALSE>>=
+plot(BESTout, compVal=1, ROPE=c(-0.1,0.1))
+@
+\begin{figure}
+  \centering
+  \includegraphics{BEST-meanDiff2grpsMore}
+  \caption{\it Posterior probability of the difference in means with compVal=1.5 and ROPE $\pm$~0.1.}
+  \label{fig:means2gMore}
+\end{figure}
+
+The annotations in (Figure~\ref{fig:means2gMore}) show a high probability that the reaction time increase is >~1. In this case it's clear that the effect is large, but if most of the probability mass (say, 95\%) lay within the ROPE, we would accept the null value for practical purposes.
+
+\bigskip
+BEST deals appropriately with differences in standard deviations between the samples and departures from normality due to outliers. We can check the difference in standard deviations or the normality parameter with \texttt{plot} (Figure~\ref{fig:sd2g}).
+
+<<sd2grps, fig=TRUE,  width=6, height=4, include=FALSE>>= %Split into separate plots?
+plot(BESTout, which="sd")
+@
+
+\begin{figure}
+  \centering
+  \includegraphics{BEST-sd2grps}
+  \caption{\it Posterior plots for difference in standard deviation.}
+  \label{fig:sd2g}
+\end{figure}
+
+The \texttt{summary} method gives us more information on the parameters of interest, including derived parameters:
+
+<<summary2g>>=
+summary(BESTout)
+@ 
+
+Here we have summaries of posterior distributions for the derived parameters: difference in means (\texttt{muDiff}), difference in standard deviations (\texttt{sigmaDiff}) and effect size (\texttt{effSz}). As with the plot command, we can set values for \texttt{compVal} and \texttt{ROPE} for each of the parameters of interest:
+
+<<summary2gMore>>=
+summary(BESTout, credMass=0.8, ROPEm=c(-0.1,0.1), ROPEsd=c(-0.15,0.15),
+          compValeff=1) 
+@ 
+
+
+
+\subsection{Checking convergence and fit}
+\label{subsec:checks2g}
+
+The output from \texttt{BESTmcmc} has class BEST, which has a \texttt{print} method:
+
+<<class2g>>=
+class(BESTout)
+print(BESTout)
+@ 
+
+The print function displays the mean, standard deviation and median of the posterior distributions of the parameters in the model, together with a 95\% Highest Density Interval: see the help page for the \texttt{hdi} function for details.
+Two convergence diagnostic measures are also displayed:
+
+\begin{itemize}
+  \item \texttt{Rhat} is the Brooks-Gelman-Rubin scale reduction factor, which is 1 on convergence. \citet{Gelman&Shirley2011} consider values below 1.1 to be acceptable. Increase the \texttt{burnInSteps} argument to \texttt{BESTmcmc} if any of the \texttt{Rhat}s are too big.
+  \item \texttt{n.eff} is the effective sample size, which is less than the number of simulations because of autocorrelation between successive values in the sample. Values of \texttt{n.eff} around 10,000 are needed for stable estimates of 95\% credible intervals.\footnote{See \url{http://doingbayesiandataanalysis.blogspot.com/2011/07/how-long-should-mcmc-chain-be-to-get.html} for some simulation results.} If any of the values is too small, you can increase the \texttt{numSavedSteps} or \texttt{thinSteps} arguments.
+\end{itemize}
+
+See the help pages for the \texttt{coda} package for more information on these measures.
+
+\bigskip
+As a further check, we can compare \emph{posterior predictive distributions} with the original data:
+
+<<ppd2grps, fig=TRUE, include=FALSE>>=
+plotPostPred(BESTout)
+@
+\begin{figure}
+  \centering
+  \includegraphics{BEST-ppd2grps}
+  \caption{\it Posterior predictive plots together with a histogram of the data.}
+  \label{fig:ppd2g}
+\end{figure}
+
+Each panel of Figure~\ref{fig:ppd2g} corresponds to one of the samples, and shows curves produced by selecting 30 random steps in the MCMC chain and plotting the \emph{t} distribution with the values of $\mu$, $\sigma$ and $\nu$ for that step. Also shown is a histogram of the actual data. We can visually assess whether the model is a reasonably good fit to the sample data (though this is easier for large samples then when $n=6$ as here).
+
+The function \texttt{plotAll} puts histograms of all the posterior distributions and the posterior predictive plots onto a single page (Figure~\ref{fig:plotAll2g}).
+
+<<plotAll2grps, fig=TRUE, width=6, height=10, include=FALSE>>=
+plotAll(BESTout)
+@
+\begin{figure}
+  \centering
+  \includegraphics[width=0.9\textwidth]{BEST-plotAll2grps}
+  \caption{\it All the posterior distributions and the posterior predictive plots.}
+  \label{fig:plotAll2g}
+\end{figure}
+
+
+
+\subsection{Working with individual parameters}
+\label{subsec:attach2g}
+
+Objects of class \texttt{BEST} contain long vectors of simulated draws from the posterior distribution of each of the parameters in the model. Since \texttt{BEST} objects are also data frames, we can use the \$ operator to extract the columns we want:
+<<attach2grps>>=
+names(BESTout)
+meanDiff <- (BESTout$mu1 - BESTout$mu2)
+meanDiffGTzero <- mean(meanDiff > 0)
+meanDiffGTzero
+@
+For example, you may wish to look at the ratio of the variances rather than the difference in the standard deviations. You can calculate a vector of draws from the posterior distribution, calculate summary statistics, and plot the distribution with \texttt{plotPost} (Figure~\ref{fig:vars2g}):
+<<vars2grps, fig=TRUE, width=4, height=4, include=FALSE>>=
+varRatio <- BESTout$sigma1^2 / BESTout$sigma2^2
+median(varRatio)
+hdi(varRatio)
+mean(varRatio > 1)
+plotPost(varRatio, xlim=c(0, 30))
+@
+\begin{figure}
+  \centering
+  \includegraphics[width=0.6\textwidth]{BEST-vars2grps}
+  \caption{\it Posterior distribution of the ratio of the sample variances.}
+  \label{fig:vars2g}
+\end{figure}
+
+
+
+\section{An example with a single group}
+\label{sec:1grp}
+
+Applying BEST to a single sample, or for differences in paired observations, works in much the same way as the two-sample method and uses the same function calls. To run the model, simply use \texttt{BESTmcmc} with only one vector of observations.
+
+% reduce numSavedSteps = 1e+03 for trial runs.
+% hide results as rjags output does not format properly
+<<run1grp, results=hide>>= 
+y0 <- c(1.89, 1.78, 1.30, 1.74, 1.33, 0.89)
+BESTout1g <- BESTmcmc(y0)
+@
+\begin{verbatim}
+Setting up the JAGS model...
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+   Graph Size: 21
+
+Initializing model
+
+  |++++++++++++++++++++++++++++++++++++++++++++++++++| 100%
+Burning in the MCMC chain...
+  |**************************************************| 100%
+Sampling final MCMC chain...
+  |**************************************************| 100%
+\end{verbatim}
+
+This time we have a single mean and standard deviation. The default plot (Figure~\ref{fig:mean1g}) shows the posterior distribution of the mean. 
+<<mean1grp, fig=TRUE,  width=6, height=4, include=FALSE>>=
+BESTout1g
+plot(BESTout1g)
+@
+\begin{figure}
+  \centering
+  \includegraphics{BEST-mean1grp}
+  \caption{\it Default plot: posterior probability distribution for the mean.}
+  \label{fig:mean1g}
+\end{figure}
+
+Standard deviation, the normality parameter and effect size can be plotted individually, or on a single page with \texttt{plotAll} (Figure~\ref{fig:plotAll1g}).
+
+<<plotAll1grp, fig=TRUE, width=6, height=6, include=FALSE>>=
+plotAll(BESTout1g)
+@
+\begin{figure}
+  \centering
+  \includegraphics[width=0.9\textwidth]{BEST-plotAll1grp}
+  \caption{\it All the posterior distributions and the posterior predictive plots.}
+  \label{fig:plotAll1g}
+\end{figure}
+
+And we can access the draws from the posterior distributions after attaching them to the search path:
+
+<<attach1grp, fig=TRUE, width=4, height=4, include=FALSE>>=
+names(BESTout1g)
+length(BESTout1g$nu)
+variance <- BESTout1g$sigma^2
+plotPost(variance, xlim=c(0, 3))
+@
+\begin{figure}
+  \centering
+  \includegraphics[width=0.6\textwidth]{BEST-attach1grp}
+  \caption{\it Posterior distribution of the sample variance.}
+  \label{fig:var1g}
+\end{figure}
+
+
+\section{What next?}
+\label{sec:whatNext}
+
+The package includes functions to estimate the power of experimental designs: see the help pages for \code{BESTpower} and \code{makeData} for details on implementation and \citet{Kruschke2013BEST} for background.
+
+
+If you want to know how the functions in the \code{BEST} package work, you can download the \R{} source code from CRAN or from GitHub \url{https://github.com/mikemeredith/BEST} or find almost the same code at \url{http://www.indiana.edu/~kruschke/BEST/} together with links to articles, videos, and the blog.
+
+Bayesian analysis with computations performed by JAGS is a powerful approach to analysis. For a practical introduction see \citet{Kruschke2011book}.
+
+
+
+\renewcommand{\refname}{\section{References}} % Make "References" a proper, numbered section.
+\bibliographystyle{jss}
+
+\bibliography{BEST}
+
+\end{document}
+
