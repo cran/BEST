@@ -1,0 +1,20 @@
+CHANGES in v.0.2.0
+
+  * Added function plotAreaInROPE.
+
+  * In BESTpower, call to x11() (which is platform specific) changed to dev.new();
+  in Rstudio, the plot is shown on active device.
+
+  * BESTmcmc and BESTpower gain 'rnd.seed' arguments for reproducible output;
+	testthat test files for BESTmcmc and BESTpower added.
+	
+  * makeData gains a showPlot argument.
+
+  * Fixed bug in plot.BEST: the ... argument was not being passed to plotPost.
+	
+  * BESTmcmc has 'verbose' argument; setting verbose = FALSE (or 0) suppresses
+	output to the Console (wish of Ben Marwick).
+
+  * BESTpower also has 'verbose' argument; here verbose = 0 (or FALSE) 
+	suppresses all output, verbose = 1 (or TRUE) provides just a progress bar;
+	verbose = 2 (the default) displays full details. 
