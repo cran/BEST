@@ -1,7 +1,5 @@
 # This file has the S3 generic 'hdi' function and a series of methods.
 
-# hdi.default replaces HDIofMCMC
-# hdi.function takes the place of HDIofICDF
 
 hdi <- function(object, credMass=0.95, ...) UseMethod("hdi")
 
@@ -44,7 +42,7 @@ hdi.mcmc.list <- function(object, credMass=0.95, ...)
 
 # hdi.rjags <- function(object, credMass=0.95, ...) 
   # hdi.matrix(object$BUGSoutput$sims.matrix, credMass=credMass, ...)
-
+  
 hdi.function <- function(object, credMass=0.95, tol, ...)  {
   if(is.na(credMass) || length(credMass) != 1 || credMass <= 0 || credMass >= 1)
     stop("credMass must be in 0 < credMass < 1")
@@ -66,6 +64,40 @@ hdi.function <- function(object, credMass=0.95, tol, ...)  {
   return(result)
 }
 
+
+hdi.density <- function(object, credMass=0.95, allowSplit=FALSE, ...) {
+  if(is.na(credMass) || length(credMass) != 1 || credMass <= 0 || credMass >= 1)
+    stop("credMass must be in 0 < credMass < 1")
+  sorted = sort( object$y , decreasing=TRUE )
+  heightIdx = min( which( cumsum( sorted) >= sum(object$y) * credMass ) )
+  height = sorted[heightIdx]
+  indices = which( object$y >= height )
+  # HDImass = sum( object$y[indices] ) / sum(object$y)
+  gaps <- which(diff(indices) > 1)
+  if(length(gaps) > 0 && !allowSplit) {
+    # In this case, return shortest 95% CrI
+    warning("The HDI is discontinuous but allowSplit = FALSE;
+    the result is a valid CrI but not HDI.")
+    cumul <- cumsum(object$y) / sum(object$y)
+    upp.poss <- low.poss <- which(cumul < 1 - credMass)
+    for (i in low.poss)
+      upp.poss[i] <- min(which(cumul > cumul[i] + credMass))
+    # all(cumul[upp.poss] - cumul[low.poss] > credMass) # check
+    width <- upp.poss - low.poss
+    best <- which(width == min(width))  # usually > 1 value due to ties
+    result <- c(lower = mean(object$x[low.poss[best]]),
+                upper = mean(object$x[upp.poss[best]]))
+  } else {
+    begs <- indices[c(1, gaps + 1)]
+    ends <- indices[c(gaps, length(indices))]
+    result <- cbind(begin = object$x[begs], end = object$x[ends])
+    if(!allowSplit)
+      names(result) <- c("lower", "upper")
+  }
+  attr(result, "credMass") <- credMass
+  attr(result, "height") <- height
+  return(result)
+}
 
 
 
