@@ -4,37 +4,60 @@
 Generate MCMC samples for posterior distributions
 }
 \description{
-This function is the core of the BEST package. It calls JAGS and passes a description of the model and the data, then retrieves and returns the MCMC samples for the parameters.
+This function is the core of the BEST package. It calls JAGS and passes a description of the model, priors, and data, then retrieves and returns the MCMC samples for the parameters.
 }
 \usage{
-BESTmcmc(y1, y2 = NULL, numSavedSteps = 1e+05, thinSteps = 1, burnInSteps = 1000,
-	verbose=TRUE, rnd.seed=NULL)
+  
+BESTmcmc(y1, y2 = NULL, priors = NULL, doPriorsOnly = FALSE,
+  numSavedSteps = 1e+05, thinSteps = 1, burnInSteps = 1000,
+	verbose=TRUE, rnd.seed=NULL, parallel=NULL)
 }
 \arguments{
   \item{y1}{
-a (non-empty) numeric vector of data values.
+a numeric vector of data values.
 }
   \item{y2}{
 a vector of values for a second group, or NULL if there is only one group of observations.
+}
+ \item{priors}{
+an optional list of values controlling the priors, see Details.
+}
+ \item{doPriorsOnly}{
+if TRUE, \code{BESTmcmc} returns MCMC chains representing the prior distributions, \emph{not} the posterior distributions for your data set.
 }
   \item{numSavedSteps}{
 the number of MCMC observations to be returned.
 }
   \item{thinSteps}{
-thinning rate. If set to n > 1, one value in n steps of the MCMC chain is returned. This is useful if autocorrelation is high.
+thinning rate. If set to n > 1, n steps of the MCMC chain are calculated for each one returned. This is useful if autocorrelation is high.
 }
   \item{burnInSteps}{
 number of steps to discard as burn-in at the beginning of the chain.
 }
-  \item{verbose}{
+   \item{verbose}{
 if FALSE, output to the R Console is suppressed.
 }
   \item{rnd.seed}{
-a positive integer (or NULL): the seed for the random number generator, used to obtain reproducible samples if required.
+a positive integer (or NULL): the seed for the random number generator, used to obtain reproducible samples if required. Values generated in different versions of BEST may differ.
+}
+  \item{parallel}{
+if NULL or TRUE and > 3 cores are available, the MCMC chains are run in parallel. (If TRUE and < 4 cores are available, a warning is given.)
 }
 }
 \details{
-The function generates vectors of random draws from the posterior distributions of the group means (\eqn{\mu}) and standard deviations (\eqn{\sigma}), as well as the measure of normality (\eqn{\nu}). The procedure uses a Bayesian MCMC process implemented in JAGS (Plummer 2003) with vague priors for all parameters, as described by Kruschke (2013). The model is shown in the diagram below.
+The function generates vectors of random draws from the posterior distributions of the group means (\eqn{\mu}) and standard deviations (\eqn{\sigma}), as well as the measure of normality (\eqn{\nu}). The procedure uses a Bayesian MCMC process implemented in JAGS (Plummer 2003).
+
+BESTmcmc allows the user to specify priors for all parameters by including elements in the \code{priors} list:\cr
+\eqn{\mu} : population means have separate normal priors, with mean \code{muM} and standard deviation \code{muSD};\cr
+\eqn{\sigma} : population standard deviations have separate gamma priors, with \emph{mode} \code{sigmaMode} and standard deviation \code{sigmaSD};\cr
+\eqn{\nu} : the normality parameter must be >= 1, so a gamma prior is used for \code{nu - 1}, with \emph{mean} \code{nuMean} and standard deviation \code{nuSD}.
+
+If there are 2 groups of observations, \code{muM, muSD, sigmaMode, sigmaSD} may be vectors of length 2 or scalar, in which case the same value is used for each population. The default priors correspond to \code{list(muM = mean(y), muSD = sd(y)*5, sigmaMode = sd(y), sigmaSD = sd(y)*5, nuMean = 29, nuSD = 29)}, where \code{y = c(y1, y2)}.
+
+If \code{priors = NULL}, vague priors as described by Kruschke (2013) are used for all parameters.
+
+
+The model is shown in the diagram below.
 
 \figure{BESTmodel.jpg}
 
@@ -54,9 +77,12 @@ while for a single sample, the columns are \code{mu, sigma, nu}.
 
 The output has the following attributes:
 
-  \item{Rhat}{the 'potential scale reduction factor'}
-  \item{n.eff}{sample size adjusted for autocorrelation}
-  \item{data}{a list with elements y1 and y2 containing the original data; y2 may be NULL}
+  \item{call}{the call to the function.}
+  \item{Rhat}{the 'potential scale reduction factor'.}
+  \item{n.eff}{sample size adjusted for autocorrelation.}
+  \item{data}{a list with elements y1 and y2 containing the original data; y2 may be NULL.}
+  \item{priors}{a list with the priors used, if the \code{priors} argument is not NULL.}
+  \item{doPriorsOnly}{logical, the value of the \code{doPriorsOnly} argument.}
 
 The package provides \code{print}, \code{plot} and \code{summary} methods for \code{BEST} objects.
 }
@@ -66,12 +92,7 @@ Kruschke, J K. 2013. Bayesian estimation supersedes the \emph{t} test. \emph{Jou
 Plummer, Martyn (2003). JAGS: A Program for Analysis of Bayesian Graphical Models Using Gibbs Sampling, \emph{Proceedings of the 3rd International Workshop on Distributed Statistical Computing (DSC 2003)}, March 20-22, Vienna, Austria. ISSN 1609-395X
 }
 \author{
-Original code by John K. Kruschke, modified by Mike Meredith
-}
-\note{
-This differs from the original \code{BESTmcmc} function in Kruschke's code:\cr
-1. Both 1-group and 2-group comparisons are dealt with by the same function.\cr
-2. In the present version, the output inherits from \code{data.frame} rather then being a matrix. This may change in future versions.
+Original code by John K. Kruschke, modified by Mike Meredith.
 }
 
 \seealso{
