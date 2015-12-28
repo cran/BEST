@@ -75,8 +75,8 @@ function( y1, y2=NULL, priors=NULL, doPriorsOnly=FALSE,
       muSD = sd(y)*5 ,
       sigmaMode = sd(y),
       sigmaSD = sd(y)*5,
-      nuMean = 29,
-      nuSD = 29 )
+      nuMean = 30,
+      nuSD = 30 )
     priors0 <- modifyList(priors0, priors)  # user's priors take prior-ity (duh!!)
     # Convert to Shape/Rate
     sigmaShRa <- gammaShRaFromModeSD(mode=priors0$sigmaMode, sd=priors0$sigmaSD)
@@ -140,8 +140,7 @@ function( y1, y2=NULL, priors=NULL, doPriorsOnly=FALSE,
         mu ~ dnorm( muM[1] , muP[1] )
         tau <- 1/pow( sigma , 2 )
          sigma ~ dgamma( Sh[1] , Ra[1] )
-        nu <- nuMinusOne+1
-        nuMinusOne ~ dgamma( ShNu , RaNu ) # prior for nu
+        nu ~ dgamma( ShNu , RaNu ) # prior for nu
       }
       " # close quote for modelString
     } else {
@@ -155,8 +154,7 @@ function( y1, y2=NULL, priors=NULL, doPriorsOnly=FALSE,
           tau[j] <- 1/pow( sigma[j] , 2 )
           sigma[j] ~ dgamma( Sh[j] , Ra[j] )
         }
-        nu <- nuMinusOne+1
-        nuMinusOne ~ dgamma( ShNu , RaNu ) # prior for nu
+        nu ~ dgamma( ShNu , RaNu ) # prior for nu
       }
       " # close quote for modelString
     }
@@ -186,7 +184,13 @@ function( y1, y2=NULL, priors=NULL, doPriorsOnly=FALSE,
   # Regarding initial values in next line: (1) sigma will tend to be too big if
   # the data have outliers, and (2) nu starts at 5 as a moderate value. These
   # initial values keep the burn-in period moderate.
-  initsList0 <- list(mu=mu, sigma=sigma, nuMinusOne=4, .RNG.seed=rnd.seed)
+  
+  initsList0 <- list(mu=mu, sigma=sigma, .RNG.seed=rnd.seed)
+  if(is.null(priors)) {
+    initsList0$nuMinusOne <- 4
+  } else {
+    initsList0$nu <- 5
+  }
   initsList <- list(
                 c(initsList0, .RNG.name="base::Wichmann-Hill"),
                 c(initsList0, .RNG.name="base::Marsaglia-Multicarry"),
