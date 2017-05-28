@@ -58,8 +58,13 @@ function( y1, y2=NULL, priors=NULL, doPriorsOnly=FALSE,
     if(!is.null(priors$muSD) && priors$muSD <= 0)
       stop("muSD must be > 0")
   }
-  if(is.null(rnd.seed))
-    rnd.seed <- floor(runif(1,1,10000))
+  
+  # following code addresses Issue #7, but maybe not acceptable on CRAN
+  # oldseed <- try(.Random.seed, silent=TRUE)
+  # if(!inherits(oldseed, "try-error"))
+    # on.exit(assign(".Random.seed", oldseed, pos=1) )
+  # if(is.null(rnd.seed))
+    # rnd.seed <- floor(runif(1,1,10000)) ### FIXME
 
   # THE PRIORS
   if(is.null(priors)) {   # use the old prior specification
@@ -113,7 +118,7 @@ function( y1, y2=NULL, priors=NULL, doPriorsOnly=FALSE,
         nu <- nuMinusOne+1
         nuMinusOne ~ dexp(1/29)
       }
-      " # close quote for modelString
+      " # close quote for modelString, old priors, single sample
     } else {
       modelString <- "
       model {
@@ -128,7 +133,7 @@ function( y1, y2=NULL, priors=NULL, doPriorsOnly=FALSE,
         nu <- nuMinusOne+1
         nuMinusOne ~ dexp(1/29)
       }
-      " # close quote for modelString
+      " # close quote for modelString, old priors, two samples
     }
   } else {    # use gamma priors
     if(is.null(y2)) {
@@ -139,10 +144,10 @@ function( y1, y2=NULL, priors=NULL, doPriorsOnly=FALSE,
         }
         mu ~ dnorm( muM[1] , muP[1] )
         tau <- 1/pow( sigma , 2 )
-         sigma ~ dgamma( Sh[1] , Ra[1] )
-        nu ~ dgamma( ShNu , RaNu ) # prior for nu
+         sigma ~ dgamma( Sh[1] , Ra[1] )T(0.0001, )
+        nu ~ dgamma( ShNu , RaNu )T(0.001, ) # prior for nu
       }
-      " # close quote for modelString
+      " # close quote for modelString, new priors, single sample
     } else {
       modelString <- "
       model {
@@ -152,11 +157,11 @@ function( y1, y2=NULL, priors=NULL, doPriorsOnly=FALSE,
         for ( j in 1:2 ) {
           mu[j] ~ dnorm( muM[j] , muP[j] )
           tau[j] <- 1/pow( sigma[j] , 2 )
-          sigma[j] ~ dgamma( Sh[j] , Ra[j] )
+          sigma[j] ~ dgamma( Sh[j] , Ra[j] )T(0.0001, )
         }
-        nu ~ dgamma( ShNu , RaNu ) # prior for nu
+        nu ~ dgamma( ShNu , RaNu )T(0.001, ) # prior for nu
       }
-      " # close quote for modelString
+      " # close quote for modelString, new priors, two samples
     }
   }
   # Write out modelString to a text file
@@ -185,31 +190,31 @@ function( y1, y2=NULL, priors=NULL, doPriorsOnly=FALSE,
   # the data have outliers, and (2) nu starts at 5 as a moderate value. These
   # initial values keep the burn-in period moderate.
   
-  initsList0 <- list(mu=mu, sigma=sigma, .RNG.seed=rnd.seed)
+  initList0 <- list(mu=mu, sigma=sigma)
+  if(!is.null(rnd.seed))
+    initList0$.RNG.seed <- rnd.seed
   if(is.null(priors)) {
-    initsList0$nuMinusOne <- 4
+    initList0$nuMinusOne <- 4
   } else {
-    initsList0$nu <- 5
+    initList0$nu <- 5
   }
-  initsList <- list(
-                c(initsList0, .RNG.name="base::Wichmann-Hill"),
-                c(initsList0, .RNG.name="base::Marsaglia-Multicarry"),
-                c(initsList0, .RNG.name="base::Super-Duper") )
+  initList <- list(
+                c(initList0, .RNG.name="base::Wichmann-Hill"),
+                c(initList0, .RNG.name="base::Marsaglia-Multicarry"),
+                c(initList0, .RNG.name="base::Super-Duper") )
   #------------------------------------------------------------------------------
   # RUN THE CHAINS
-  codaSamples <- jags.basic(
+  codaSamples <- justRunJags(
     data = dataForJAGS,
-    inits = initsList,
-    parameters.to.save = c( "mu" , "sigma" , "nu" ),     # The parameters to be monitored
-    model.file = modelFile,
-    n.chains = 3,    # Do not change this without also changing inits.
-    n.adapt = 500,
-    n.iter = ceiling( ( numSavedSteps * thinSteps) / 3  + burnInSteps ),
-    n.burnin = burnInSteps,
-    n.thin = thinSteps,
-    modules = NULL,
+    initList = initList,
+    params = c( "mu" , "sigma" , "nu" ),     # The parameters to be monitored
+    modelFile = modelFile,
+    chains = 3,    # Do not change this without also changing inits.
+    adapt = 500, # adaptation continues during burnin
+    sample = numSavedSteps,
+    burnin = burnInSteps,
+    thin = thinSteps,
     parallel = parallel,
-    DIC = FALSE,
     seed = rnd.seed,
     verbose = verbose)
   #------------------------------------------------------------------------------
