@@ -72,7 +72,7 @@ summary(BESTout)
 ### code chunk number 12: summary2gMore
 ###################################################
 summary(BESTout, credMass=0.8, ROPEm=c(-0.1,0.1), ROPEsd=c(-0.15,0.15),
-          compValeff=1) 
+          compValeff=1)
 
 
 ###################################################

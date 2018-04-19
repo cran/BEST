@@ -1,3 +1,11 @@
+CHANGES in v.0.5.1 (2018-04-19)
+
+  * Fixed issue with position of text on density plots.
+
+  * plotAll and plotPostPred modified to show the data with an 'ordinary' histogram.
+
+  * Warning if adaptation is not adequate (instead of "NOTE: Stopping adaptation").
+
 CHANGES in v.0.5.0 (2017-05-28)
 
   * 'BESTmcmc' uses 'rjags' directly, instead of 'jagsUI' wrappers. This resolves 'set.seed' issues, but values returned will not be the same as with previous versions.
