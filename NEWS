@@ -1,3 +1,13 @@
+CHANGES in v.0.5.3 (2021-05-17)
+
+  * Examples no longer use parallel processing.
+  
+  * Fixed: rebuilding of vignette (thanks to Kurt Hornik for the fix).
+
+  * Updated help page for 'BESTmcmc' to clarify difference between scale and SD for t-distribution.
+
+  * Added citation for Krushke (2013) to Description in DESCRIPTION file (suggestion of Uwe Ligges).
+
 CHANGES in v.0.5.2 (2020-05-18)
 
   * Change of maintainer email.
