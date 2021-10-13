@@ -1,14 +1,28 @@
-CHANGES in v.0.5.3 (2021-05-17)
+Changes in version 0.5.4 (2021-10-13)
+
+  * Fixed bug in 'plotAll' (reported by jlwoodard).
+
+  * Specify 'col = NULL' for the histograms in 'plotPostPred' (default in 4.2.0 will be gray).
+
+  * Added more options for the user to specify colors in the plots (thanks to Jan Vorhagen for the patches).
+
+  * Fixed formatting of NEWS file.
+
+  * Spellcheck with 'spelling' package: standardized on US spellings.
+
+  * Now using Authors@R in DESCRIPTION file.
+
+Changes in version 0.5.3 (2021-05-17)
 
   * Examples no longer use parallel processing.
-  
+
   * Fixed: rebuilding of vignette (thanks to Kurt Hornik for the fix).
 
   * Updated help page for 'BESTmcmc' to clarify difference between scale and SD for t-distribution.
 
   * Added citation for Krushke (2013) to Description in DESCRIPTION file (suggestion of Uwe Ligges).
 
-CHANGES in v.0.5.2 (2020-05-18)
+Changes in version 0.5.2 (2020-05-18)
 
   * Change of maintainer email.
 
@@ -17,7 +31,7 @@ CHANGES in v.0.5.2 (2020-05-18)
   * Increased resolution of fitted density from n=512 to n=2048 to give better estimates
     of HDI.
 
-CHANGES in v.0.5.1 (2018-04-19)
+Changes in version 0.5.1 (2018-04-19)
 
   * Fixed issue with position of text on density plots.
 
@@ -25,25 +39,25 @@ CHANGES in v.0.5.1 (2018-04-19)
 
   * Warning if adaptation is not adequate (instead of "NOTE: Stopping adaptation").
 
-CHANGES in v.0.5.0 (2017-05-28)
+Changes in version 0.5.0 (2017-05-28)
 
   * 'BESTmcmc' uses 'rjags' directly, instead of 'jagsUI' wrappers. This resolves 'set.seed' issues, but values returned will not be the same as with previous versions.
 
   * Function 'hdi' removed; imports HDInterval::hdi instead.
 
-CHANGES in v.0.4.0 (2015-12-28)
+Changes in version 0.4.0 (2015-12-28)
 
   * BESTmcmc now allows normality parameter, nu < 1 (See John Kruschke's blog post 2 Dec 2015).
 
   * Vignette updated to use new prior specification.
 
-CHANGES in v.0.3.0 (2015-06-29)
+Changes in version 0.3.0 (2015-06-29)
 
   * BESTmcmc 'showPriors' argument changed to 'doPriorsOnly'.
 
   * Function postPriorOverlap added.
 
-CHANGES in v.0.2.6 (2015-05-09)
+Changes in version 0.2.6 (2015-05-09)
 
   * BESTmcmc gains a 'showPriors' argument.
 
@@ -51,11 +65,11 @@ CHANGES in v.0.2.6 (2015-05-09)
 
   * makeData throws an error if the number of outliers is 1.
 
-CHANGES in v.0.2.5 (2015-05-07)
+Changes in version 0.2.5 (2015-05-07)
 
   * Run chains in parallel using jagsUI (>= 1.3.6) instead of rjags.
 
-CHANGES in v.0.2.4 (2015-05-03)
+Changes in version 0.2.4 (2015-05-03)
 
   * Function BESTmcmc now allows user to specify priors.
 
@@ -63,7 +77,7 @@ CHANGES in v.0.2.3 (2014-11-17)
 
   * Added sanity checks to BESTmcmc.
 
-CHANGES in v.0.2.2 (2014-06-06)
+Changes in version 0.2.2 (2014-06-06)
 
   * hdi gains a density method, which can handle discontinuous HDIs. This is
   used for the posterior density plots when showCurve = TRUE.
@@ -76,7 +90,7 @@ CHANGES in v.0.2.2 (2014-06-06)
     o plotPost and plot.BEST return an object of class 'histogram' invisibly.
     o plotPost deals properly with a vector of integers.
 
-CHANGES in v.0.2.0 (2013-08-23)
+Changes in version 0.2.0 (2013-08-23)
 
   * Added function plotAreaInROPE.
 
@@ -84,15 +98,15 @@ CHANGES in v.0.2.0 (2013-08-23)
   in Rstudio, the plot is shown on active device.
 
   * BESTmcmc and BESTpower gain 'rnd.seed' arguments for reproducible output;
-	testthat test files for BESTmcmc and BESTpower added.
+  testthat test files for BESTmcmc and BESTpower added.
 
   * makeData gains a showPlot argument.
 
   * Fixed bug in plot.BEST: the ... argument was not being passed to plotPost.
 
   * BESTmcmc has 'verbose' argument; setting verbose = FALSE (or 0) suppresses
-	output to the Console (wish of Ben Marwick).
+  output to the Console (wish of Ben Marwick).
 
   * BESTpower also has 'verbose' argument; here verbose = 0 (or FALSE)
-	suppresses all output, verbose = 1 (or TRUE) provides just a progress bar;
-	verbose = 2 (the default) displays full details.
+  suppresses all output, verbose = 1 (or TRUE) provides just a progress bar;
+  verbose = 2 (the default) displays full details.
